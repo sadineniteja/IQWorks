@@ -56,8 +56,8 @@ function App() {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [config, setConfig] = useState<ChatConfig>({
-    url: 'app-hbmuchch.fly.dev',
-    port: '443',
+    url: 'no6g961ogesglr-8000.proxy.runpod.net',
+    port: '',
     use_web: false,
     role: 'teacher',
     temperature: 0.7,
@@ -121,8 +121,7 @@ function App() {
     setError('')
 
     try {
-      const protocol = config.url === 'localhost' ? 'http' : 'https'
-      const response = await fetch(`${protocol}://${config.url}:${config.port}/query`, {
+      const response = await fetch(`https://${config.url}/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -254,12 +253,13 @@ function App() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="port">Port</Label>
+                        <Label htmlFor="port">Port (Optional)</Label>
                         <Input
                           id="port"
                           value={config.port}
                           onChange={(e) => setConfig(prev => ({ ...prev, port: e.target.value }))}
-                          placeholder="Enter port number (e.g., 8000)"
+                          placeholder="Leave empty for standard HTTPS"
+                          disabled
                         />
                       </div>
                       <div className="flex items-center space-x-2">
@@ -371,7 +371,7 @@ function App() {
               <span>{config.use_web ? 'Web Enhanced' : 'Direct API'}</span>
               <Separator orientation="vertical" className="h-3" />
               <Cpu className="w-3 h-3" />
-              <span>{config.url}:{config.port}</span>
+              <span>{config.url}</span>
             </div>
           </div>
         </div>
