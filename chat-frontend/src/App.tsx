@@ -23,7 +23,10 @@ import {
   Copy,
   Moon,
   Sun,
-  Sparkles
+  Sparkles,
+  Terminal,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react'
 import './App.css'
 
@@ -50,6 +53,13 @@ interface ChatConfig {
   max_tokens: number
 }
 
+interface ConsoleLog {
+  id: string
+  timestamp: string
+  type: 'request' | 'response' | 'error'
+  data: any
+}
+
 function App() {
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string>('')
@@ -65,14 +75,32 @@ function App() {
   })
   const [darkMode, setDarkMode] = useState(false)
   const [error, setError] = useState<string>('')
+  const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([])
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const consoleEndRef = useRef<HTMLDivElement>(null)
   
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const scrollConsoleToBottom = () => {
+    consoleEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const addConsoleLog = (type: 'request' | 'response' | 'error', data: any) => {
+    const log: ConsoleLog = {
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleTimeString(),
+      type,
+      data
+    }
+    setConsoleLogs(prev => [...prev, log])
+    setTimeout(scrollConsoleToBottom, 100)
   }
 
   useEffect(() => {
@@ -120,20 +148,25 @@ function App() {
     setIsLoading(true)
     setError('')
 
+    const requestPayload = {
+      query: userMessage,
+      web: config.use_web,
+      role: config.role,
+      temperature: config.temperature,
+      max_tokens: config.max_tokens
+    }
+
+    addConsoleLog('request', requestPayload)
+
     try {
       const response = await fetch(`https://${config.url}/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: userMessage,
-          web: config.use_web,
-          role: config.role,
-          temperature: config.temperature,
-          max_tokens: config.max_tokens
-        })
+        body: JSON.stringify(requestPayload)
       })
 
       const data = await response.json()
+      addConsoleLog('response', data)
       const aiResponse = data.response || data.content || JSON.stringify(data)
       
       const userMsg = {
@@ -163,6 +196,7 @@ function App() {
       ))
     } catch (err) {
       setError('Failed to send message')
+      addConsoleLog('error', { message: err instanceof Error ? err.message : 'Unknown error' })
       console.error('Error sending message:', err)
     } finally {
       setIsLoading(false)
@@ -535,6 +569,58 @@ function App() {
                 </Button>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Debug Console */}
+        <div className={`fixed bottom-0 left-0 right-0 bg-gray-900 text-green-400 font-mono text-sm transition-all duration-300 ${isConsoleOpen ? 'h-64' : 'h-8'} border-t border-gray-700 z-50`}>
+          <div className="flex items-center justify-between px-4 py-1 bg-gray-800 border-b border-gray-700">
+            <div className="flex items-center space-x-2">
+              <Terminal className="w-4 h-4" />
+              <span>Debug Console ({consoleLogs.length} logs)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConsoleLogs([])}
+                className="h-6 px-2 text-xs text-gray-400 hover:text-white"
+              >
+                Clear
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsConsoleOpen(!isConsoleOpen)}
+                className="h-6 px-2 text-gray-400 hover:text-white"
+              >
+                {isConsoleOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+          
+          {isConsoleOpen && (
+            <ScrollArea className="h-56 p-2">
+              <div className="space-y-2">
+                {consoleLogs.map((log) => (
+                  <div key={log.id} className="border-l-2 border-gray-600 pl-3">
+                    <div className="flex items-center space-x-2 text-xs text-gray-400 mb-1">
+                      <span>{log.timestamp}</span>
+                      <Badge 
+                        variant={log.type === 'error' ? 'destructive' : log.type === 'request' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {log.type.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <pre className="text-xs text-green-400 whitespace-pre-wrap overflow-x-auto">
+                      {JSON.stringify(log.data, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+                <div ref={consoleEndRef} />
+              </div>
+            </ScrollArea>
           )}
         </div>
       </div>
