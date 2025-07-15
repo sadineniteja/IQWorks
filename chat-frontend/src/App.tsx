@@ -156,7 +156,11 @@ function App() {
       max_tokens: config.max_tokens
     }
 
-    addConsoleLog('request', requestPayload)
+    const curlCommand = `curl -X POST https://${config.url}/query \\
+-H "Content-Type: application/json" \\
+-d '${JSON.stringify(requestPayload, null, 2)}'`
+
+    addConsoleLog('request', curlCommand)
 
     try {
       const response = await fetch(`https://${config.url}/query`, {
