@@ -45,6 +45,7 @@ interface ChatConfig {
   url: string
   port: string
   use_web: boolean
+  role: string
   temperature: number
   max_tokens: number
 }
@@ -58,6 +59,7 @@ function App() {
     url: 'app-hbmuchch.fly.dev',
     port: '443',
     use_web: false,
+    role: 'teacher',
     temperature: 0.7,
     max_tokens: 400
   })
@@ -119,12 +121,14 @@ function App() {
     setError('')
 
     try {
-      const response = await fetch(`https://${config.url}/query`, {
+      const protocol = config.url === 'localhost' ? 'http' : 'https'
+      const response = await fetch(`${protocol}://${config.url}:${config.port}/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: userMessage,
           web: config.use_web,
+          role: config.role,
           temperature: config.temperature,
           max_tokens: config.max_tokens
         })
@@ -268,6 +272,15 @@ function App() {
                           <Globe className="w-4 h-4" />
                           <span>Use Web Enhancement</span>
                         </Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="role">Role</Label>
+                        <Input
+                          id="role"
+                          value={config.role}
+                          onChange={(e) => setConfig(prev => ({ ...prev, role: e.target.value }))}
+                          placeholder="Enter role (e.g., teacher, assistant, expert)"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="max-tokens">Max Tokens</Label>

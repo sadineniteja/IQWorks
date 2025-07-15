@@ -51,6 +51,7 @@ class ConfigRequest(BaseModel):
 class QueryRequest(BaseModel):
     query: str
     web: bool = False
+    role: str = "assistant"
     temperature: float = 0.7
     max_tokens: int = 400
 
@@ -200,6 +201,7 @@ async def query_endpoint(request: QueryRequest):
         return {
             "query": request.query,
             "web": request.web,
+            "role": request.role,
             "temperature": request.temperature,
             "max_tokens": request.max_tokens,
             "status": "received"
